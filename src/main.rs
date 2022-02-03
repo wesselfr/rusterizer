@@ -1,20 +1,20 @@
 extern crate minifb;
 
-use glam::{Mat2, Vec2};
+use glam::{Mat2, Vec2, Vec3};
 use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: usize = 640;
 const HEIGHT: usize = 640;
 
-pub fn edge_function_cw(v0: Vec2, v1: Vec2, p:Vec2) ->f32{
+pub fn edge_function_cw(v0: Vec2, v1: Vec2, p: Vec2) -> f32 {
     (p.x - v0.x) * (v1.y - v0.y) - (p.y - v0.y) * (v1.x - v0.x)
 }
 
-pub fn index_to_coords(p: usize, height: usize) -> (usize, usize){
+pub fn index_to_coords(p: usize, height: usize) -> (usize, usize) {
     (p % height, p / height)
 }
 
-pub fn to_argb8(a: u8, r: u8, g:u8, b:u8) ->u32{
+pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {
     let mut argb: u32 = a as u32;
     argb = (argb << 8) + r as u32;
     argb = (argb << 8) + g as u32;
@@ -30,9 +30,17 @@ fn main() {
     let det = matrix.determinant();
     println!("Determinant: {}", det);
 
-    let edge = (Vec2::new(0.0,0.0), Vec2::new(WIDTH as f32, HEIGHT as f32));
+    let triangle = [
+        Vec2::new(100.0, 100.0),
+        Vec2::new(250.0, 400.0),
+        Vec2::new(400.0, 100.0),
+    ];
+    let edge = (Vec2::new(0.0, 0.0), Vec2::new(WIDTH as f32, HEIGHT as f32));
 
-    println!("Edge function: {}", edge_function_cw(vec1, vec2, Vec2::new(10.0, 20.0)));
+    println!(
+        "Edge function: {}",
+        edge_function_cw(vec1, vec2, Vec2::new(10.0, 20.0))
+    );
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
@@ -51,16 +59,21 @@ fn main() {
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         for i in 0..buffer.len() {
-
             let coords = index_to_coords(i as usize, HEIGHT);
             let coords = Vec2::new(coords.0 as f32, coords.1 as f32);
-            let side = edge_function_cw(coords, edge.0, edge.1);
-            if side > 0.0{
-                buffer[i] = to_argb8(255, 255, 0, 0);
-            }
-            else{
-                buffer[i] = to_argb8(255, 0, 255, 0);
-            }
+            let m0 = edge_function_cw(coords, triangle[1], triangle[2]);
+            let m1 = edge_function_cw(coords, triangle[2], triangle[0]);
+            let m2 = edge_function_cw(coords, triangle[0], triangle[1]);
+
+            //let side = edge_function_cw(coords, edge.0, edge.1);
+            // if m0 > 0.0 && m1 > 0.0 && m2 > 0.0{
+            //     buffer[i] = to_argb8(255, 255, 0, 0);
+            // }
+            // else{
+            //     buffer[i] = to_argb8(255, 0, 0, 0);
+            // }
+
+            buffer[i] = to_argb8(255, m0 as u8, m1 as u8, m2 as u8);
         }
 
         // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way

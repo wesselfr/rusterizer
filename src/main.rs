@@ -1,7 +1,10 @@
 extern crate minifb;
 
-use glam::{Vec2};
+use glam::Vec2;
 use minifb::{Key, Window, WindowOptions};
+
+pub mod color;
+pub use color::*;
 
 const WIDTH: usize = 640;
 const HEIGHT: usize = 640;
@@ -26,23 +29,6 @@ pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {
     argb = (argb << 8) + g as u32;
     argb = (argb << 8) + b as u32;
     argb
-}
-
-pub struct Color {
-    pub a: u8,
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
-
-impl Color {
-    pub fn to_argb8(&self) -> u32 {
-        let mut argb: u32 = self.a as u32;
-        argb = (argb << 8) + self.r as u32;
-        argb = (argb << 8) + self.g as u32;
-        argb = (argb << 8) + self.b as u32;
-        argb
-    }
 }
 
 fn plotline_low(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
@@ -124,7 +110,7 @@ fn main() {
         panic!("{}", e);
     });
 
-    // Limit to max ~60 fps update rate
+    // Limit to max ~120 fps update rate
     window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
 
     while window.is_open() && !window.is_key_down(Key::Escape) {

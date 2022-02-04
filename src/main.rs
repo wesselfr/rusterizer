@@ -1,6 +1,6 @@
 extern crate minifb;
 
-use glam::Vec2;
+use glam::{Vec2, Vec3};
 use minifb::{Key, Window, WindowOptions};
 
 pub mod color;
@@ -29,6 +29,25 @@ pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {
     argb = (argb << 8) + g as u32;
     argb = (argb << 8) + b as u32;
     argb
+}
+
+fn barycentric_coordinates(point: Vec2, v0: Vec2, v1: Vec2, v2: Vec2, area: f32) -> Option<Vec3> {
+    let m0 = edge_function_cw(point, v1, v2);
+    let m1 = edge_function_cw(point, v2, v0);
+    let m2 = edge_function_cw(point, v0, v1);
+
+    let a = 1.0 / area;
+    if m0 >= 0.0 && m1 >= 0.0 && m2 >= 0.0 {
+        Some(Vec3::new(m0 * a, m1 * a, m2 * a))
+    } else {
+        None
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Vertex {
+    pub position: Vec2,
+    pub color: Vec3,
 }
 
 fn plotline_low(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
@@ -75,6 +94,7 @@ fn plotline_high(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
     }
 }
 
+// Bresenham's line algorithm
 fn plotline(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
     if (v1.y - v0.y).abs() < (v1.x - v0.x).abs() {
         if v0.x > v1.x {
@@ -115,17 +135,22 @@ fn main() {
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         for i in 0..buffer.len() {
-            let coords = index_to_coords(i as usize, WIDTH);
+            let coords = index_to_coords(i, WIDTH);
             let coords = Vec2::new(coords.0 as f32, coords.1 as f32);
-            let m0 = edge_function_cw(coords, triangle[1], triangle[2]);
-            let m1 = edge_function_cw(coords, triangle[2], triangle[0]);
-            let m2 = edge_function_cw(coords, triangle[0], triangle[1]);
 
-            if m0 > 0.0 && m1 > 0.0 && m2 > 0.0 {
-                buffer[i] = to_argb8(255, 255, 0, 0);
-            } else {
-                buffer[i] = to_argb8(255, 0, 0, 0);
+            let area = edge_function_cw(triangle[0], triangle[1], triangle[2]);
+            // if m0 > 0.0 && m1 > 0.0 && m2 > 0.0 {
+            //     buffer[i] = to_argb8(255, 255, 0, 0);
+            // } else {
+            //     buffer[i] = to_argb8(255, 0, 0, 0);
+            // }
+            let bary = barycentric_coordinates(coords, triangle[0], triangle[1], triangle[2], area);
+            match bary{
+                Some(b) => {buffer[i] = to_argb8(255, (255.0*b.x) as u8, (255.0*b.y) as u8, (255.0*b.z) as u8)},
+                None => {}
             }
+
+
 
             //buffer[i] = to_argb8(255, m0 as u8, m1 as u8, m2 as u8);
 

@@ -1,5 +1,7 @@
 extern crate minifb;
 
+use std::path::Path;
+
 use geometry::draw_triangle;
 use glam::{Vec2, Vec3, Vec3Swizzles};
 use minifb::{Key, Window, WindowOptions};
@@ -9,6 +11,9 @@ pub use color::*;
 
 pub mod utils;
 pub use utils::*;
+
+pub mod texture;
+pub use texture::*;
 
 pub mod geometry;
 pub use geometry::Vertex;
@@ -30,12 +35,12 @@ fn main() {
         Vertex {
             position: Vec3::new(250.0, 400.0, 1.0),
             color: Vec3::new(0.0, 1.0, 0.0),
-            uv: Vec2::new(0.0, 0.0),
+            uv: Vec2::new(0.5, 1.0),
         },
         Vertex {
             position: Vec3::new(400.0, 100.0, 1.0),
             color: Vec3::new(0.0, 0.0, 1.0),
-            uv: Vec2::new(0.0, 0.0),
+            uv: Vec2::new(1.0, 0.0),
         },
     ];
 
@@ -54,8 +59,10 @@ fn main() {
     // Limit to max ~120 fps update rate
     window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
 
+    let texture = Texture::load(Path::new("assets/test.jpg"));
+
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        draw_triangle(triangle[0], triangle[1], triangle[2], &mut buffer);
+        draw_triangle(triangle[0], triangle[1], triangle[2], &texture, &mut buffer);
 
         plotline(
             triangle[0].position.xy(),

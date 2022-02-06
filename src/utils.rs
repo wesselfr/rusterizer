@@ -74,7 +74,7 @@ pub fn index_to_coords(p: usize, height: usize) -> Vec2 {
 }
 
 pub fn coords_to_index(coord: Vec2, height: usize) -> usize {
-    (coord.x + height as f32 * coord.y) as usize
+    coord.x as usize + coord.y as usize * height
 }
 
 pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {

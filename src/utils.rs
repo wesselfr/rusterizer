@@ -69,8 +69,12 @@ pub fn edge_function_cw(v0: Vec2, v1: Vec2, p: Vec2) -> f32 {
     (p.x - v0.x) * (v1.y - v0.y) - (p.y - v0.y) * (v1.x - v0.x)
 }
 
-pub fn index_to_coords(p: usize, height: usize) -> (usize, usize) {
-    (p / height, p % height)
+pub fn index_to_coords(p: usize, height: usize) -> Vec2 {
+    Vec2::new(p as f32 / height as f32, p as f32 % height as f32)
+}
+
+pub fn coords_to_index(coord: Vec2, height: usize) -> usize {
+    (coord.x + height as f32 * coord.y) as usize
 }
 
 pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {

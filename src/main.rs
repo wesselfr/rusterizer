@@ -1,5 +1,6 @@
 extern crate minifb;
 
+use geometry::draw_triangle;
 use glam::{Vec2, Vec3, Vec3Swizzles};
 use minifb::{Key, Window, WindowOptions};
 
@@ -54,42 +55,7 @@ fn main() {
     window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        for (i, pixel) in buffer.iter_mut().enumerate() {
-            let coords = index_to_coords(i, WIDTH);
-            let coords = Vec2::new(coords.0 as f32, coords.1 as f32);
-
-            let area = edge_function_cw(
-                triangle[0].position.xy(),
-                triangle[1].position.xy(),
-                triangle[2].position.xy(),
-            );
-            // if m0 > 0.0 && m1 > 0.0 && m2 > 0.0 {
-            //     buffer[i] = to_argb8(255, 255, 0, 0);
-            // } else {
-            //     buffer[i] = to_argb8(255, 0, 0, 0);
-            // }
-            let bary = barycentric_coordinates(
-                coords,
-                triangle[0].position.xy(),
-                triangle[1].position.xy(),
-                triangle[2].position.xy(),
-                area,
-            );
-            match bary {
-                Some(b) => {
-                    let color =
-                        b.x * triangle[0].color + b.y * triangle[1].color + b.z * triangle[2].color;
-                    *pixel = to_argb8(
-                        255,
-                        (255.0 * color.x) as u8,
-                        (255.0 * color.y) as u8,
-                        (255.0 * color.z) as u8,
-                    )
-                }
-                None => {}
-            }
-            //buffer[i] = to_argb8(255, m0 as u8, m1 as u8, m2 as u8);
-        }
+        draw_triangle(triangle[0], triangle[1], triangle[2], &mut buffer);
 
         plotline(
             triangle[0].position.xy(),

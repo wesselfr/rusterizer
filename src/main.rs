@@ -45,6 +45,7 @@ fn main() {
     ];
 
     let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
+    let mut z_buffer: Vec<f32> = vec![100.0; WIDTH * HEIGHT];
 
     let mut window = Window::new(
         "Test - ESC to exit",
@@ -62,7 +63,14 @@ fn main() {
     let texture = Texture::load(Path::new("assets/test.jpg"));
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        draw_triangle(triangle[0], triangle[1], triangle[2], &texture, &mut buffer);
+        draw_triangle(
+            triangle[0],
+            triangle[1],
+            triangle[2],
+            &texture,
+            &mut buffer,
+            &mut z_buffer,
+        );
 
         plotline(
             triangle[0].position.xy(),

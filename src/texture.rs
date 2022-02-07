@@ -1,8 +1,8 @@
-use std::path::Path;
-use crate::Vec2;
-use crate::to_argb8;
 use crate::coords_to_index;
+use crate::to_argb8;
+use crate::Vec2;
 use stb_image;
+use std::path::Path;
 
 pub struct Texture {
     pub width: usize,

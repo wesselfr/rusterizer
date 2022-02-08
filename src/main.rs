@@ -26,19 +26,24 @@ const DEBUG_COLOR: Color = Color {
 };
 
 fn main() {
-    let triangle = [
+    let quad = [
         Vertex {
             position: Vec3::new(100.0, 100.0, 1.0),
             color: Vec3::new(1.0, 0.0, 0.0),
             uv: Vec2::new(0.0, 0.0),
         },
         Vertex {
-            position: Vec3::new(250.0, 400.0, 1.0),
+            position: Vec3::new(100.0, 612.0, 1.0),
             color: Vec3::new(0.0, 1.0, 0.0),
-            uv: Vec2::new(0.5, 1.0),
+            uv: Vec2::new(0.0, 1.0),
         },
         Vertex {
-            position: Vec3::new(400.0, 100.0, 1.0),
+            position: Vec3::new(612.0, 612.0, 1.0),
+            color: Vec3::new(0.0, 1.0, 0.0),
+            uv: Vec2::new(1.0,1.0)
+        },
+        Vertex {
+            position: Vec3::new(612.0, 100.0, 1.0),
             color: Vec3::new(0.0, 0.0, 1.0),
             uv: Vec2::new(1.0, 0.0),
         },
@@ -64,31 +69,20 @@ fn main() {
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         draw_triangle(
-            triangle[0],
-            triangle[1],
-            triangle[2],
+            quad[0],
+            quad[1],
+            quad[2],
             &texture,
             &mut buffer,
             &mut z_buffer,
         );
-
-        plotline(
-            triangle[0].position.xy(),
-            triangle[1].position.xy(),
-            DEBUG_COLOR,
+        draw_triangle(
+            quad[0],
+            quad[2],
+            quad[3],
+            &texture,
             &mut buffer,
-        );
-        plotline(
-            triangle[1].position.xy(),
-            triangle[2].position.xy(),
-            DEBUG_COLOR,
-            &mut buffer,
-        );
-        plotline(
-            triangle[2].position.xy(),
-            triangle[0].position.xy(),
-            DEBUG_COLOR,
-            &mut buffer,
+            &mut z_buffer,
         );
 
         // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way

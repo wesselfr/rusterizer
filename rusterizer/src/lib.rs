@@ -27,6 +27,12 @@ pub fn setup(test: &State) {
 pub fn update(test: &mut State) {
     test.draw(0, 0, 0x00000000);
 
+    if test.time_passed > 100.0 {
+        test.time_passed = 0.0;
+    }
+
+    let quad_pos = Vec2::new(0.0, test.time_passed * 0.0);
+
     let vertices = [
         Vertex {
             position: Vec3::new(100.0, 100.0, 1.0),
@@ -53,23 +59,30 @@ pub fn update(test: &mut State) {
     for i in 0..WIDTH * HEIGHT {
         let pos = index_to_coords(i);
 
-        let mut area = edge_function_cw(vertices[0].position.xy(), vertices[1].position.xy(), vertices[2].position.xy());
+        let mut area = edge_function_cw(
+            vertices[0].position.xy() + quad_pos,
+            vertices[1].position.xy() + quad_pos,
+            vertices[2].position.xy() + quad_pos,
+        );
         let mut bary = barycentric_coordinates(
             pos,
-            vertices[0].position.xy(),
-            vertices[1].position.xy(),
-            vertices[2].position.xy(),
+            vertices[0].position.xy() + quad_pos,
+            vertices[1].position.xy() + quad_pos,
+            vertices[2].position.xy() + quad_pos,
             area,
         );
 
-        if bary.is_none()
-        {
-            area = edge_function_cw(vertices[0].position.xy(), vertices[2].position.xy(), vertices[3].position.xy());
+        if bary.is_none() {
+            area = edge_function_cw(
+                vertices[0].position.xy() + quad_pos,
+                vertices[2].position.xy() + quad_pos,
+                vertices[3].position.xy() + quad_pos,
+            );
             bary = barycentric_coordinates(
                 pos,
-                vertices[0].position.xy(),
-                vertices[2].position.xy(),
-                vertices[3].position.xy(),
+                vertices[0].position.xy() + quad_pos,
+                vertices[2].position.xy() + quad_pos,
+                vertices[3].position.xy() + quad_pos,
                 area,
             );
         }
@@ -116,7 +129,4 @@ pub fn update(test: &mut State) {
     );
 
     test.set_clear_color(0xff103030);
-    //test.draw_text(0, 9, &format!("Current Version: {}", test.version));
-    //test.draw_text(0, 10, "Custom draw function working.");
-    //test.draw_text(0, 12, "Roguelike");
 }

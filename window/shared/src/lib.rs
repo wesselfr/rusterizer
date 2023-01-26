@@ -5,6 +5,7 @@ pub const HEIGHT: usize = 600;
 
 pub struct State {
     pub version: u32,
+    pub time_passed: f32,
     pub draw_fn: FnPtrDraw,
     pub should_clear: bool,
     pub clear_color: u32,

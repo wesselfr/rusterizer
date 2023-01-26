@@ -21,6 +21,7 @@ pub fn test_draw(x: u16, y: u16, color: u32) {
 fn main() {
     let mut shared_state = State {
         version: 1,
+        time_passed: 0.0,
         draw_fn: test_draw,
         should_clear: true,
         clear_color: 0x00,
@@ -63,6 +64,7 @@ fn main() {
             }
         }
 
+        shared_state.time_passed += 1.0;
         app.update(&shared_state);
 
         unsafe {

@@ -1,10 +1,9 @@
-use crate::Color;
+use shared::{State, WIDTH};
 use glam::{Vec2, Vec3};
 
-pub const WIDTH: usize = 640;
-pub const HEIGHT: usize = 640;
+use crate::color::Color;
 
-fn plotline_low(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
+fn plotline_low(v0: Vec2, v1: Vec2, color: Color, state: &State) {
     let dx = v1.x - v0.x;
     let mut dy = v1.y - v0.y;
     let mut yi = 1.0;
@@ -16,7 +15,7 @@ fn plotline_low(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
     let mut y = v0.y;
 
     for x in v0.x as usize..v1.x as usize {
-        buff[x * WIDTH + y as usize] = color.to_argb8();
+        state.draw(x as u16, y as u16, color.to_argb8());
         if d >= 0.0 {
             y += yi;
             d += 2.0 * (dy - dx);
@@ -26,7 +25,7 @@ fn plotline_low(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
     }
 }
 
-fn plotline_high(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
+fn plotline_high(v0: Vec2, v1: Vec2, color: Color, state: &State) {
     let mut dx = v1.x - v0.x;
     let dy = v1.y - v0.y;
     let mut xi = 1.0;
@@ -38,7 +37,7 @@ fn plotline_high(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
     let mut x = v0.x;
 
     for y in v0.y as usize..v1.y as usize {
-        buff[x as usize * WIDTH + y] = color.to_argb8();
+        state.draw(x as u16, y as u16, color.to_argb8());
         if d >= 0.0 {
             x += xi;
             d += 2.0 * (dx - dy);
@@ -49,18 +48,18 @@ fn plotline_high(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
 }
 
 // Bresenham's line algorithm
-pub fn plotline(v0: Vec2, v1: Vec2, color: Color, buff: &mut Vec<u32>) {
+pub fn plotline(v0: Vec2, v1: Vec2, color: Color, state: &State) {
     if (v1.y - v0.y).abs() < (v1.x - v0.x).abs() {
         if v0.x > v1.x {
-            plotline_low(v1, v0, color, buff);
+            plotline_low(v1, v0, color, state);
         } else {
-            plotline_low(v0, v1, color, buff);
+            plotline_low(v0, v1, color, state);
         }
     } else {
         if v0.y > v1.y {
-            plotline_high(v1, v0, color, buff);
+            plotline_high(v1, v0, color, state);
         } else {
-            plotline_high(v0, v1, color, buff);
+            plotline_high(v0, v1, color, state);
         }
     }
 }
@@ -73,8 +72,8 @@ pub fn index_to_coords(p: usize, height: usize) -> Vec2 {
     Vec2::new(p as f32 / height as f32, p as f32 % height as f32)
 }
 
-pub fn coords_to_index(coord: Vec2, height: usize) -> usize {
-    coord.x as usize * height + coord.y as usize
+pub fn coords_to_index(coord: Vec2) -> usize {
+    coord.x as usize * WIDTH + coord.y as usize
 }
 
 pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {

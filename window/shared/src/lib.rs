@@ -14,6 +14,9 @@ impl State {
     pub fn finalize(&self) {
         println!("LIB ACTIVE!");
     }
+    pub fn test(&self, test_fun: FnPtrDraw) {
+        (test_fun)(0, 0, 0xffffffff);
+    }
     pub fn draw(&self, x: u16, y: u16, color: u32) {
         (self.draw_fn)(x, y, color);
     }

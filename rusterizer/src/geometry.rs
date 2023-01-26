@@ -21,7 +21,7 @@ pub fn draw_triangle(
     // Todo: optimize this by only itterating over the region that needs to be updated.
     // Loop over positions instead of pixels, to only update the part of the screen that is needed.
     for (i, pixel) in buff.iter_mut().enumerate() {
-        let coords = index_to_coords(i, WIDTH);
+        let coords = index_to_coords(i);
 
         let area = edge_function_cw(v0.position.xy(), v1.position.xy(), v2.position.xy());
         let bary = barycentric_coordinates(

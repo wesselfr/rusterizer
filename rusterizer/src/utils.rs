@@ -1,5 +1,5 @@
-use shared::{State, WIDTH};
 use glam::{Vec2, Vec3};
+use shared::{State, WIDTH};
 
 use crate::color::Color;
 
@@ -68,8 +68,8 @@ pub fn edge_function_cw(v0: Vec2, v1: Vec2, p: Vec2) -> f32 {
     (p.x - v0.x) * (v1.y - v0.y) - (p.y - v0.y) * (v1.x - v0.x)
 }
 
-pub fn index_to_coords(p: usize, height: usize) -> Vec2 {
-    Vec2::new(p as f32 / height as f32, p as f32 % height as f32)
+pub fn index_to_coords(p: usize) -> Vec2 {
+    Vec2::new(p as f32 / WIDTH as f32, p as f32 % WIDTH as f32)
 }
 
 pub fn coords_to_index(coord: Vec2) -> usize {

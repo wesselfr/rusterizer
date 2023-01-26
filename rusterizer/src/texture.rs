@@ -39,7 +39,7 @@ impl Texture {
 
     pub fn argb_at_uv(&self, u: f32, v: f32) -> u32 {
         let uv = Vec2::new(u * self.width as f32, v * self.height as f32);
-        let id = coords_to_index(uv, self.height);
+        let id = coords_to_index(uv);
         if id < self.data.len() {
             self.data[id]
         } else {

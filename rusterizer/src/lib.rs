@@ -29,7 +29,7 @@ pub fn update(test: &mut State) {
 
     let vertices = [
         Vertex {
-            position: Vec3::new(400.0, 100.0, 1.0),
+            position: Vec3::new(100.0, 100.0, 1.0),
             color: Vec3::new(1.0, 0.0, 0.0),
             uv: Vec2::new(0.0, 0.0),
         },
@@ -43,19 +43,36 @@ pub fn update(test: &mut State) {
             color: Vec3::new(0.0, 1.0, 0.0),
             uv: Vec2::new(1.0, 1.0),
         },
+        Vertex {
+            position: Vec3::new(400.0, 100.0, 1.0),
+            color: Vec3::new(0.0, 0.0, 1.0),
+            uv: Vec2::new(1.0, 0.0),
+        },
     ];
 
     for i in 0..WIDTH * HEIGHT {
         let pos = index_to_coords(i);
 
-        let area = edge_function_cw(vertices[0].position.xy(), vertices[1].position.xy(), vertices[2].position.xy());
-        let bary = barycentric_coordinates(
+        let mut area = edge_function_cw(vertices[0].position.xy(), vertices[1].position.xy(), vertices[2].position.xy());
+        let mut bary = barycentric_coordinates(
             pos,
             vertices[0].position.xy(),
             vertices[1].position.xy(),
             vertices[2].position.xy(),
             area,
         );
+
+        if bary.is_none()
+        {
+            area = edge_function_cw(vertices[0].position.xy(), vertices[2].position.xy(), vertices[3].position.xy());
+            bary = barycentric_coordinates(
+                pos,
+                vertices[0].position.xy(),
+                vertices[2].position.xy(),
+                vertices[3].position.xy(),
+                area,
+            );
+        }
 
         if let Some(b) = bary {
             test.draw(pos.x as u16, pos.y as u16, 0xffff30ff)

@@ -11,4 +11,3 @@ crate-type = ["dylib"]
 [dependencies]
 glam = "*"
 shared = { path = "../window/shared", features = ["import"] }
-stb_image = "0.2.4"

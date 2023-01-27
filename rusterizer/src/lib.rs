@@ -1,9 +1,12 @@
+use std::f32::INFINITY;
+use std::path::Path;
+
+use glam::UVec3;
 use glam::Vec2;
 use glam::Vec3;
 use glam::Vec3Swizzles;
-use shared::State;
-use shared::HEIGHT;
-use shared::WIDTH;
+use shared::texture::Texture;
+use shared::*;
 
 pub mod color;
 use crate::color::*;
@@ -11,29 +14,35 @@ use crate::color::*;
 pub mod utils;
 use crate::utils::*;
 
-pub mod texture;
-use crate::texture::*;
+pub mod transform;
+use crate::transform::*;
+
+pub mod camera;
+use crate::camera::*;
 
 pub mod geometry;
 use crate::geometry::*;
 
 #[no_mangle]
-pub fn setup(test: &State) {
+pub fn setup(test: &mut State) {
     println!("Application version: {}", test.version);
+
+    test.textures.clear();
+    let texture = Texture::load(Path::new("assets/test.jpg"));
+    if let Ok(texture) = texture {
+        test.textures.push(texture);
+    }
+
     test.finalize();
 }
 
 #[no_mangle]
-pub fn update(test: &mut State) {
-    test.draw(0, 0, 0x00000000);
+pub fn update(shared_state: &mut State) {
+    let quad_pos = Vec2::new(0.0, shared_state.time_passed * 0.0);
 
-    if test.time_passed > 100.0 {
-        test.time_passed = 0.0;
-    }
+    let mut z_buffer = vec![INFINITY; WIDTH * HEIGHT];
 
-    let quad_pos = Vec2::new(0.0, test.time_passed * 0.0);
-
-    let vertices = [
+    let mut vertices = vec![
         Vertex {
             position: Vec3::new(100.0, 100.0, 1.0),
             color: Vec3::new(1.0, 0.0, 0.0),
@@ -46,87 +55,41 @@ pub fn update(test: &mut State) {
         },
         Vertex {
             position: Vec3::new(400.0, 400.0, 1.0),
-            color: Vec3::new(0.0, 1.0, 0.0),
+            color: Vec3::new(0.0, 0.0, 1.0),
             uv: Vec2::new(1.0, 1.0),
         },
         Vertex {
             position: Vec3::new(400.0, 100.0, 1.0),
-            color: Vec3::new(0.0, 0.0, 1.0),
+            color: Vec3::new(1.0, 0.0, 1.0),
             uv: Vec2::new(1.0, 0.0),
         },
     ];
+    let mut indices = vec![UVec3::new(0, 1, 2), UVec3::new(0, 2, 3)];
 
-    for i in 0..WIDTH * HEIGHT {
-        let pos = index_to_coords(i);
+    let mut mesh = Mesh::new();
+    mesh.add_vertices(&mut indices, &mut vertices);
 
-        let mut area = edge_function_cw(
-            vertices[0].position.xy() + quad_pos,
-            vertices[1].position.xy() + quad_pos,
-            vertices[2].position.xy() + quad_pos,
-        );
-        let mut bary = barycentric_coordinates(
-            pos,
-            vertices[0].position.xy() + quad_pos,
-            vertices[1].position.xy() + quad_pos,
-            vertices[2].position.xy() + quad_pos,
-            area,
-        );
+    let aspect_ratio = WIDTH as f32 / HEIGHT as f32;
+    let mut camera = Camera {
+        aspect_ratio,
+        transform: Transform::from_translation(glam::vec3(
+            200.0 + shared_state.time_passed.sin() * 200.0,
+            100.0,
+            400.0 + shared_state.time_passed.cos() * 200.0,
+        )),
+        far_plane: 100.0,
+        ..Default::default()
+    };
+    let mut transform = Transform::IDENTITY;
 
-        if bary.is_none() {
-            area = edge_function_cw(
-                vertices[0].position.xy() + quad_pos,
-                vertices[2].position.xy() + quad_pos,
-                vertices[3].position.xy() + quad_pos,
-            );
-            bary = barycentric_coordinates(
-                pos,
-                vertices[0].position.xy() + quad_pos,
-                vertices[2].position.xy() + quad_pos,
-                vertices[3].position.xy() + quad_pos,
-                area,
-            );
-        }
-
-        if let Some(b) = bary {
-            test.draw(pos.x as u16, pos.y as u16, 0xffff30ff)
-        }
-    }
-
-    plotline(
-        vertices[0].position.xy(),
-        vertices[1].position.xy(),
-        Color {
-            a: 255,
-            r: 255,
-            g: 255,
-            b: 255,
-        },
-        &test,
+    mesh.draw_mesh(
+        Some(&shared_state.textures[0]),
+        &transform,
+        &camera,
+        Vec2::new(WIDTH as f32, HEIGHT as f32),
+        shared_state,
+        &mut z_buffer,
     );
 
-    plotline(
-        vertices[1].position.xy(),
-        vertices[2].position.xy(),
-        Color {
-            a: 255,
-            r: 255,
-            g: 255,
-            b: 255,
-        },
-        &test,
-    );
-
-    plotline(
-        vertices[2].position.xy(),
-        vertices[0].position.xy(),
-        Color {
-            a: 255,
-            r: 255,
-            g: 255,
-            b: 255,
-        },
-        &test,
-    );
-
-    test.set_clear_color(0xff103030);
+    shared_state.set_clear_color(0xff103030);
 }

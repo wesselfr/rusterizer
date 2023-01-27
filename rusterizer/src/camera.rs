@@ -1,6 +1,6 @@
-use std::f32::consts::PI;
-use glam::Mat4;
 use crate::Transform;
+use glam::Mat4;
+use std::f32::consts::PI;
 
 pub struct Camera {
     pub near_plane: f32,

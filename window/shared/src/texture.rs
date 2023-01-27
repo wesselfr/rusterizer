@@ -1,6 +1,5 @@
-use crate::coords_to_index;
 use crate::to_argb8;
-use crate::Vec2;
+use glam::Vec2;
 use stb_image;
 use std::path::Path;
 
@@ -12,7 +11,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn load(path: &Path) -> Self {
+    pub fn load(path: &Path) -> Result<Self, &'static str> {
         let decoded_image = stb_image::image::load(path);
         if let stb_image::image::LoadResult::ImageU8(image) = decoded_image {
             // we are not taking into accoung pngs yet :)
@@ -26,20 +25,24 @@ impl Texture {
                     )
                 })
                 .collect();
-            Self {
+            Ok(Self {
                 width: image.width,
                 height: image.height,
                 data,
                 depth: image.depth,
-            }
+            })
         } else {
-            panic!("Unsupported texture type");
+            Err("Unsupported texture type")
         }
+    }
+
+    fn coords_to_index(coord: Vec2, height: usize) -> usize {
+        coord.x as usize * height + coord.y as usize
     }
 
     pub fn argb_at_uv(&self, u: f32, v: f32) -> u32 {
         let uv = Vec2::new(u * self.width as f32, v * self.height as f32);
-        let id = coords_to_index(uv);
+        let id = Self::coords_to_index(uv, self.height);
         if id < self.data.len() {
             self.data[id]
         } else {

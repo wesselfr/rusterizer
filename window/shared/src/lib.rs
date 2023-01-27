@@ -1,12 +1,16 @@
-type FnPtrDraw = fn(u16, u16, u32);
+pub mod texture;
+use crate::texture::*;
 
 pub const WIDTH: usize = 800;
 pub const HEIGHT: usize = 600;
+
+type FnPtrDraw = fn(u16, u16, u32);
 
 pub struct State {
     pub version: u32,
     pub time_passed: f32,
     pub draw_fn: FnPtrDraw,
+    pub textures: Vec<Texture>,
     pub should_clear: bool,
     pub clear_color: u32,
 }
@@ -14,9 +18,6 @@ pub struct State {
 impl State {
     pub fn finalize(&self) {
         println!("LIB ACTIVE!");
-    }
-    pub fn test(&self, test_fun: FnPtrDraw) {
-        (test_fun)(0, 0, 0xffffffff);
     }
     pub fn draw(&self, x: u16, y: u16, color: u32) {
         (self.draw_fn)(x, y, color);

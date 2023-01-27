@@ -102,3 +102,14 @@ pub fn barycentric_coordinates(
         None
     }
 }
+
+pub fn map_to_range<T>(v: T, a1: T, a2: T, b1: T, b2: T) -> T
+where
+    T: std::ops::Sub<Output = T>
+        + std::ops::Div<Output = T>
+        + std::ops::Mul<Output = T>
+        + std::ops::Add<Output = T>
+        + Copy,
+{
+    b1 + (v - a1) * (b2 - b1) / (a2 - a1)
+}

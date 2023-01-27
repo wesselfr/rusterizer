@@ -1,8 +1,8 @@
 extern crate minifb;
 
 use minifb::{Key, Window, WindowOptions};
-use shared::*;
-use std::{path::Path, time::SystemTime};
+use shared::{*, texture::Texture};
+use std::{path::Path, time::{SystemTime, Instant}};
 
 pub mod reload;
 use crate::reload::*;
@@ -23,13 +23,15 @@ fn main() {
         version: 1,
         time_passed: 0.0,
         draw_fn: test_draw,
+        textures: Vec::new(),
         should_clear: true,
         clear_color: 0x00,
     };
 
     let mut app: Application;
     app = load_lib();
-
+    app.setup(&shared_state);
+    
     let mut last_modified = SystemTime::now();
 
     let mut window = Window::new(
@@ -43,9 +45,11 @@ fn main() {
     });
 
     // Limit to max ~120 fps update rate
-    window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
+    //window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
+    window.limit_update_rate(None);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let start_time= Instant::now();
         if should_reload(last_modified) {
             println!("== NEW VERSION FOUND ==");
             app = reload(app);
@@ -54,6 +58,7 @@ fn main() {
             last_modified = SystemTime::now();
             app.setup(&shared_state);
         }
+
 
         // Clear screen if required
         if shared_state.should_clear {
@@ -64,12 +69,17 @@ fn main() {
             }
         }
 
-        shared_state.time_passed += 1.0;
         app.update(&shared_state);
+        let elapsed_time = start_time.elapsed();
+        println!("Frame render time: {} ms", elapsed_time.as_millis());
 
         unsafe {
             // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
             window.update_with_buffer(&BUFFER, WIDTH, HEIGHT).unwrap();
         }
+
+        let elapsed_time = start_time.elapsed();
+        println!("Total time: {} ms ({} FPS)", elapsed_time.as_millis(), 1000/elapsed_time.as_millis().max(1));
+        shared_state.time_passed += elapsed_time.as_secs_f32();
     }
 }

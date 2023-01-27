@@ -10,3 +10,5 @@ import = []
 export = []
 
 [dependencies]
+glam = "*"
+stb_image = "0.2.4"

@@ -4,7 +4,7 @@ use std::{fs, time::SystemTime};
 use libloading::Library;
 use shared::State;
 
-const LIB_PATH: &str = "../rusterizer/target/debug/rusterizer.dll";
+const LIB_PATH: &str = "../rusterizer/target/release/rusterizer.dll";
 const LIB_PATH_ACTIVE: &str = "active/rusterizer.dll";
 
 pub struct Application(pub Library);

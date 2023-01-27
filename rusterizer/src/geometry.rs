@@ -56,9 +56,13 @@ pub fn draw_triangle(
     let clip1 = mvp * Vec4::from((vertices[1].position, 1.0));
     let clip2 = mvp * Vec4::from((vertices[2].position, 1.0));
 
-    let rec0 = 1.0 / clip0.length();
-    let rec1 = 1.0 / clip1.length();
-    let rec2 = 1.0 / clip2.length();
+    // let rec0 = 1.0 / clip0.length();
+    // let rec1 = 1.0 / clip1.length();
+    // let rec2 = 1.0 / clip2.length();
+
+    let rec0 = 1.0 / clip0.w;
+    let rec1 = 1.0 / clip1.w;
+    let rec2 = 1.0 / clip2.w;
 
     // This would be the output of the vertex shader (clip space)
     // then we perform perspective division to transform in ndc
@@ -74,15 +78,15 @@ pub fn draw_triangle(
     // screeen coordinates remapped to window
     let sc0 = glam::vec2(
         map_to_range(ndc0.x, -1.0, 1.0, 0.0, viewport.x),
-        map_to_range(ndc0.y, -1.0, 1.0, 0.0, viewport.y),
+        map_to_range(-ndc0.y, -1.0, 1.0, 0.0, viewport.y),
     );
     let sc1 = glam::vec2(
         map_to_range(ndc1.x, -1.0, 1.0, 0.0, viewport.x),
-        map_to_range(ndc1.y, -1.0, 1.0, 0.0, viewport.y),
+        map_to_range(-ndc1.y, -1.0, 1.0, 0.0, viewport.y),
     );
     let sc2 = glam::vec2(
         map_to_range(ndc2.x, -1.0, 1.0, 0.0, viewport.x),
-        map_to_range(ndc2.y, -1.0, 1.0, 0.0, viewport.y),
+        map_to_range(-ndc2.y, -1.0, 1.0, 0.0, viewport.y),
     );
 
     let bounds = BoundingBox2D::get_bounds_from_triangle(&[sc0, sc1, sc2]);
@@ -90,11 +94,11 @@ pub fn draw_triangle(
     // Loop over positions instead of pixels, to only update the part of the screen that is needed.
     for y in bounds.min.y as usize..=bounds.max.y as usize {
         for x in bounds.min.x as usize..=bounds.max.x as usize {
-            let coords = Vec2::new(x as f32, y as f32);
+            let coords = Vec2::new(x as f32, y as f32) + 0.5;
             let pixel_id = coords_to_index(coords);
 
             // Ensure pixel is within bounds
-            if pixel_id > WIDTH * HEIGHT {
+            if pixel_id >= WIDTH * HEIGHT {
                 continue;
             }
 
@@ -102,11 +106,12 @@ pub fn draw_triangle(
             let bary = barycentric_coordinates(coords, sc0, sc1, sc2, area);
             if let Some(b) = bary {
                 let correction = b.x * rec0 + b.y * rec1 + b.z * rec2;
+                let depth = correction;
                 let correction = 1.0 / correction;
-                let depth = b.x * ndc0.z + b.y * ndc1.z + b.z * ndc2.z;
 
                 if depth <= zbuff[pixel_id] {
                     let color: u32;
+                    zbuff[pixel_id] = depth;
 
                     match texture {
                         Some(texture) => {

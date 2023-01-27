@@ -96,7 +96,7 @@ pub fn barycentric_coordinates(
     let m2 = edge_function_cw(point, v0, v1);
 
     let a = 1.0 / area;
-    if m0 >= 0.0 && m1 >= 0.0 && m2 >= 0.0 {
+    if m0 > 0.0 && m1 > 0.0 && m2 > 0.0 {
         Some(Vec3::new(m0 * a, m1 * a, m2 * a))
     } else {
         None

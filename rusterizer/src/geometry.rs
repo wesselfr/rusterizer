@@ -3,7 +3,7 @@ use std::ops::{Mul, MulAssign};
 use crate::{
     camera::Camera,
     transform::Transform,
-    utils::{coords_to_index, map_to_range, to_argb8},
+    utils::{coords_to_index, map_to_range, to_argb8, plotline},
     Texture,
 };
 use glam::{UVec3, Vec2, Vec3, Vec3Swizzles, Vec4};
@@ -89,7 +89,12 @@ pub fn draw_triangle(
         map_to_range(-ndc2.y, -1.0, 1.0, 0.0, viewport.y),
     );
 
-    let bounds = BoundingBox2D::get_bounds_from_triangle(&[sc0, sc1, sc2]);
+    let mut bounds = BoundingBox2D::get_bounds_from_triangle(&[sc0, sc1, sc2]);
+
+    if bounds.min.x < 0.0{bounds.min.x = 0.0;}
+    if bounds.min.y < 0.0 {bounds.min.y = 0.0;}
+    if bounds.max.x > HEIGHT as f32 {bounds.max.x = HEIGHT as f32;}
+    if bounds.max.y > WIDTH as f32 {bounds.max.y = WIDTH as f32;}
 
     // Loop over positions instead of pixels, to only update the part of the screen that is needed.
     for y in bounds.min.y as usize..=bounds.max.y as usize {

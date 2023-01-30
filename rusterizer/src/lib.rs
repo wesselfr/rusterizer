@@ -78,7 +78,7 @@ pub fn update(shared_state: &mut State) {
         transform: Transform::from_translation(glam::vec3(
             0.0 + shared_state.time_passed.sin() * 0.5,
             0.0,
-            4.0 + shared_state.time_passed.cos() * 0.5,
+            3.0 + shared_state.time_passed.cos() * 0.8,
         )),
         far_plane: 100.0,
         ..Default::default()

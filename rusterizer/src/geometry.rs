@@ -170,15 +170,22 @@ pub fn draw_triangle(
     }
 }
 
-type ShadeFn = fn(&RenderState, [&Vertex;3], Vec3, f32) -> u32;
+type ShadeFn = fn(&RenderState, [&Vertex; 3], Vec3, f32) -> u32;
 pub struct RenderState<'a> {
     texture: Option<&'a Texture>,
     shade_fn: ShadeFn,
 }
 
 impl RenderState<'_> {
+    pub fn from_shade_fn(shade_fn: ShadeFn, texture: Option<&'_ Texture>) -> RenderState
+    {
+        RenderState { texture, shade_fn }
+    }
     pub fn draw_texture(texture: Option<&'_ Texture>) -> RenderState {
-        RenderState { texture: texture, shade_fn: draw_texture } 
+        RenderState {
+            texture: texture,
+            shade_fn: draw_texture,
+        }
     }
 }
 
@@ -212,7 +219,31 @@ pub fn draw_texture(
             );
         }
     }
-    
+
+    color
+}
+
+pub fn draw_vertex_color(
+    state: &RenderState,
+    vertices: [&Vertex; 3],
+    bary_centric: Vec3,
+    correction: f32,
+) -> u32 {
+    let color: u32;
+    let v0 = vertices[0];
+    let v1 = vertices[1];
+    let v2 = vertices[2];
+
+    let vertex_color =
+        bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
+    let vertex_color = vertex_color * correction;
+    color = to_argb8(
+        255,
+        (vertex_color.x * 255.0) as u8,
+        (vertex_color.y * 255.0) as u8,
+        (vertex_color.z * 255.0) as u8,
+    );
+
     color
 }
 
@@ -275,7 +306,8 @@ pub fn draw_triangle_clipped(
 
                 if depth <= zbuff[pixel_id] {
                     zbuff[pixel_id] = depth;
-                    let color = (render_state.shade_fn)(render_state, [&v0, &v1, &v2], b, correction);
+                    let color =
+                        (render_state.shade_fn)(render_state, [&v0, &v1, &v2], b, correction);
                     state.draw(x as u16, y as u16, color);
                 }
             }

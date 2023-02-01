@@ -1,7 +1,9 @@
 pub mod texture;
+use glam::Vec2;
+
 use crate::texture::*;
 
-pub const WIDTH: usize = 800;
+pub const WIDTH: usize = 600;
 pub const HEIGHT: usize = 600;
 
 type FnPtrDraw = fn(u16, u16, u32);
@@ -25,6 +27,14 @@ impl State {
     pub fn set_clear_color(&mut self, color: u32) {
         self.clear_color = color;
     }
+}
+
+pub fn index_to_coords(p: usize) -> Vec2 {
+    Vec2::new(p as f32 / WIDTH as f32, p as f32 % WIDTH as f32)
+}
+
+pub fn coords_to_index(coord: Vec2) -> usize {
+    coord.x as usize * WIDTH + coord.y as usize
 }
 
 pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {

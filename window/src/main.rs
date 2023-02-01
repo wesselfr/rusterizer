@@ -13,7 +13,7 @@ pub fn test_draw(x: u16, y: u16, color: u32) {
     unsafe {
         let index = x as usize * WIDTH + y as usize;
         if index < WIDTH * HEIGHT {
-            BUFFER[x as usize * WIDTH + y as usize] = color;
+            BUFFER[index] = color;
         }
     }
 }

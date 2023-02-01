@@ -1,5 +1,5 @@
 use glam::{Vec2, Vec3};
-use shared::{State, WIDTH};
+use shared::State;
 
 use crate::color::Color;
 
@@ -66,14 +66,6 @@ pub fn plotline(v0: Vec2, v1: Vec2, color: Color, state: &State) {
 
 pub fn edge_function_cw(v0: Vec2, v1: Vec2, p: Vec2) -> f32 {
     (p.x - v0.x) * (v1.y - v0.y) - (p.y - v0.y) * (v1.x - v0.x)
-}
-
-pub fn index_to_coords(p: usize) -> Vec2 {
-    Vec2::new(p as f32 / WIDTH as f32, p as f32 % WIDTH as f32)
-}
-
-pub fn coords_to_index(coord: Vec2) -> usize {
-    coord.x as usize * WIDTH + coord.y as usize
 }
 
 pub fn to_argb8(a: u8, r: u8, g: u8, b: u8) -> u32 {

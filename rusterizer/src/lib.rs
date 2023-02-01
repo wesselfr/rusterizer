@@ -6,6 +6,7 @@ use glam::UVec3;
 use glam::Vec2;
 use glam::Vec3;
 use glam::Vec3Swizzles;
+use glam::Vec4;
 use shared::texture::Texture;
 use shared::*;
 
@@ -47,22 +48,22 @@ pub fn update(shared_state: &mut State) {
 
     let mut vertices = vec![
         Vertex {
-            position: Vec3::new(-1.0, -1.0, 1.0),
+            position: Vec4::new(-1.0, -1.0, 1.0, 1.0),
             color: Vec3::new(1.0, 0.0, 0.0),
             uv: Vec2::new(0.0, 0.0),
         },
         Vertex {
-            position: Vec3::new(-1.0, 1.0, 1.0),
+            position: Vec4::new(-1.0, 1.0, 1.0, 1.0),
             color: Vec3::new(0.0, 1.0, 0.0),
             uv: Vec2::new(0.0, 1.0),
         },
         Vertex {
-            position: Vec3::new(1.0, 1.0, 1.0),
+            position: Vec4::new(1.0, 1.0, 1.0, 1.0),
             color: Vec3::new(0.0, 0.0, 1.0),
             uv: Vec2::new(1.0, 1.0),
         },
         Vertex {
-            position: Vec3::new(1.0, -1.0, 1.0),
+            position: Vec4::new(1.0, -1.0, 1.0, 1.0),
             color: Vec3::new(1.0, 0.0, 1.0),
             uv: Vec2::new(1.0, 0.0),
         },
@@ -80,12 +81,12 @@ pub fn update(shared_state: &mut State) {
             0.0,
             3.0 + shared_state.time_passed.cos() * 0.8,
         )),
-        far_plane: 100.0,
         ..Default::default()
     };
     let mut transform = Transform::IDENTITY;
 
-    camera.transform.rotation = Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5) + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
+    camera.transform.rotation = Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
+        + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
 
     mesh.draw_mesh(
         Some(&shared_state.textures[0]),

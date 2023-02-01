@@ -88,8 +88,10 @@ pub fn update(shared_state: &mut State) {
     camera.transform.rotation = Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
         + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
 
+    let render_state = RenderState::draw_texture(Some(&shared_state.textures[0]));
+
     mesh.draw_mesh(
-        Some(&shared_state.textures[0]),
+        &render_state,
         &transform,
         &camera,
         Vec2::new(WIDTH as f32, HEIGHT as f32),

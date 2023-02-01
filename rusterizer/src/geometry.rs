@@ -2,6 +2,7 @@ use std::ops::{Mul, MulAssign};
 
 use crate::{
     camera::Camera,
+    color,
     transform::Transform,
     utils::{map_to_range, plotline, to_argb8},
     Texture,
@@ -126,24 +127,24 @@ pub fn cull_triangle_backface(triangle: &Triangle) -> bool {
 }
 
 pub fn clip_cull_triangle(triangle: &Triangle) -> ClipResult {
-    //Backface culling
+    // Backface culling
     if cull_triangle_backface(&triangle) {
         return ClipResult::None;
     }
-
+    // Frustum culling
     if cull_triangle_view_frustum(triangle) {
         return ClipResult::None;
     } else {
         // TODO: Clip Triangle
     }
-    
+
     // Return original triangle
     return ClipResult::One(*triangle);
 }
 
 pub fn draw_triangle(
     vertices: [&Vertex; 3],
-    texture: Option<&Texture>,
+    render_state: &RenderState,
     transform: &Transform,
     cam: &Camera,
     viewport: Vec2,
@@ -160,20 +161,64 @@ pub fn draw_triangle(
     match result {
         ClipResult::None => {}
         ClipResult::One(tri1) => {
-            draw_triangle_clipped(&tri1, texture, transform, cam, viewport, state, zbuff);
+            draw_triangle_clipped(&tri1, render_state, viewport, state, zbuff);
         }
         ClipResult::Two(tri1, tri2) => {
-            draw_triangle_clipped(&tri1, texture, transform, cam, viewport, state, zbuff);
-            draw_triangle_clipped(&tri2, texture, transform, cam, viewport, state, zbuff);
+            draw_triangle_clipped(&tri1, render_state, viewport, state, zbuff);
+            draw_triangle_clipped(&tri2, render_state, viewport, state, zbuff);
         }
     }
 }
 
+type ShadeFn = fn(&RenderState, [&Vertex;3], Vec3, f32) -> u32;
+pub struct RenderState<'a> {
+    texture: Option<&'a Texture>,
+    shade_fn: ShadeFn,
+}
+
+impl RenderState<'_> {
+    pub fn draw_texture(texture: Option<&'_ Texture>) -> RenderState {
+        RenderState { texture: texture, shade_fn: draw_texture } 
+    }
+}
+
+pub fn draw_texture(
+    state: &RenderState,
+    vertices: [&Vertex; 3],
+    bary_centric: Vec3,
+    correction: f32,
+) -> u32 {
+    let color: u32;
+    let v0 = vertices[0];
+    let v1 = vertices[1];
+    let v2 = vertices[2];
+
+    match state.texture {
+        Some(texture) => {
+            let tex_coords =
+                bary_centric.x * v0.uv + bary_centric.y * v1.uv + bary_centric.z * v2.uv;
+            let tex_coords = tex_coords * correction;
+            color = texture.argb_at_uv(tex_coords.x, tex_coords.y);
+        }
+        None => {
+            let vertex_color =
+                bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
+            let vertex_color = vertex_color * correction;
+            color = to_argb8(
+                255,
+                (vertex_color.x * 255.0) as u8,
+                (vertex_color.y * 255.0) as u8,
+                (vertex_color.z * 255.0) as u8,
+            );
+        }
+    }
+    
+    color
+}
+
 pub fn draw_triangle_clipped(
     triangle: &Triangle,
-    texture: Option<&Texture>,
-    transform: &Transform,
-    cam: &Camera,
+    render_state: &RenderState,
     viewport: Vec2,
     state: &State,
     zbuff: &mut Vec<f32>,
@@ -229,26 +274,8 @@ pub fn draw_triangle_clipped(
                 let correction = 1.0 / correction;
 
                 if depth <= zbuff[pixel_id] {
-                    let color: u32;
                     zbuff[pixel_id] = depth;
-
-                    match texture {
-                        Some(texture) => {
-                            let tex_coords = b.x * v0.uv + b.y * v1.uv + b.z * v2.uv;
-                            let tex_coords = tex_coords * correction;
-                            color = texture.argb_at_uv(tex_coords.x, tex_coords.y);
-                        }
-                        None => {
-                            let vertex_color = b.x * v0.color + b.y * v1.color + b.z * v2.color;
-                            let vertex_color = vertex_color * correction;
-                            color = to_argb8(
-                                255,
-                                (vertex_color.x * 255.0) as u8,
-                                (vertex_color.y * 255.0) as u8,
-                                (vertex_color.z * 255.0) as u8,
-                            );
-                        }
-                    }
+                    let color = (render_state.shade_fn)(render_state, [&v0, &v1, &v2], b, correction);
                     state.draw(x as u16, y as u16, color);
                 }
             }
@@ -292,7 +319,7 @@ impl Mesh {
 
     pub fn draw_mesh(
         &self,
-        texture: Option<&Texture>,
+        render_state: &RenderState,
         transform: &Transform,
         cam: &Camera,
         viewport: Vec2,
@@ -301,7 +328,15 @@ impl Mesh {
     ) {
         for triangle in &self.triangles {
             let vertices = self.get_triangle_vertices(*triangle);
-            draw_triangle(vertices, texture, transform, cam, viewport, state, zbuff);
+            draw_triangle(
+                vertices,
+                render_state,
+                transform,
+                cam,
+                viewport,
+                state,
+                zbuff,
+            );
         }
     }
 }

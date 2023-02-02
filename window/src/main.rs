@@ -1,8 +1,11 @@
 extern crate minifb;
 
 use minifb::{Key, Window, WindowOptions};
-use shared::{*, texture::Texture};
-use std::{path::Path, time::{SystemTime, Instant}};
+use shared::{texture::Texture, *};
+use std::{
+    path::Path,
+    time::{Instant, SystemTime},
+};
 
 pub mod reload;
 use crate::reload::*;
@@ -31,7 +34,7 @@ fn main() {
     let mut app: Application;
     app = load_lib();
     app.setup(&shared_state);
-    
+
     let mut last_modified = SystemTime::now();
 
     let mut window = Window::new(
@@ -49,7 +52,7 @@ fn main() {
     window.limit_update_rate(None);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        let start_time= Instant::now();
+        let start_time = Instant::now();
         if should_reload(last_modified) {
             println!("== NEW VERSION FOUND ==");
             app = reload(app);
@@ -58,7 +61,6 @@ fn main() {
             last_modified = SystemTime::now();
             app.setup(&shared_state);
         }
-
 
         // Clear screen if required
         if shared_state.should_clear {
@@ -79,7 +81,11 @@ fn main() {
         }
 
         let elapsed_time = start_time.elapsed();
-        println!("Total time: {} ms ({} FPS)", elapsed_time.as_millis(), 1000/elapsed_time.as_millis().max(1));
+        println!(
+            "Total time: {} ms ({} FPS)",
+            elapsed_time.as_millis(),
+            1000 / elapsed_time.as_millis().max(1)
+        );
         shared_state.time_passed += elapsed_time.as_secs_f32();
     }
 }

@@ -95,6 +95,16 @@ pub fn barycentric_coordinates(
     }
 }
 
+pub fn lerp<T>(min: T, max: T, t: f32) -> T
+where
+    T: std::ops::Sub<Output = T>
+        + std::ops::Mul<f32, Output = T>
+        + std::ops::Add<Output = T>
+        + Copy,
+{
+    min + (max - min) * t
+}
+
 pub fn map_to_range<T>(v: T, a1: T, a2: T, b1: T, b2: T) -> T
 where
     T: std::ops::Sub<Output = T>

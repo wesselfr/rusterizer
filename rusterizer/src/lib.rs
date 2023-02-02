@@ -77,9 +77,9 @@ pub fn update(shared_state: &mut State) {
     let mut camera = Camera {
         aspect_ratio,
         transform: Transform::from_translation(glam::vec3(
-            0.0 + shared_state.time_passed.sin() * 0.5,
+            0.0 + shared_state.time_passed.sin() * 0.8,
             0.0,
-            3.0 + shared_state.time_passed.cos() * 0.8,
+            2.0 + shared_state.time_passed.cos() * 0.8,
         )),
         ..Default::default()
     };
@@ -88,7 +88,7 @@ pub fn update(shared_state: &mut State) {
     camera.transform.rotation = Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
         + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
 
-    let mut render_state = RenderState::from_shade_fn(draw_vertex_color, Some(&shared_state.textures[0]));
+    let render_state = RenderState::from_shade_fn(draw_texture, Some(&shared_state.textures[0]));
 
     mesh.draw_mesh(
         &render_state,

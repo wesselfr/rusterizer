@@ -1,10 +1,10 @@
-use std::ops::{Mul, MulAssign};
+use std::ops::{Add, Mul, MulAssign, Sub};
 
 use crate::{
     camera::Camera,
     color,
     transform::Transform,
-    utils::{map_to_range, plotline, to_argb8},
+    utils::{lerp, map_to_range, plotline, to_argb8},
     Texture,
 };
 use glam::{Mat4, UVec3, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
@@ -42,6 +42,36 @@ impl MulAssign<f32> for Vertex {
     }
 }
 
+impl Add for Vertex {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let position = self.position + rhs.position;
+        let color = self.color + rhs.color;
+        let uv = self.uv + rhs.uv;
+        Self {
+            position,
+            color,
+            uv,
+        }
+    }
+}
+
+impl Sub for Vertex {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let position = self.position - rhs.position;
+        let color = self.color - rhs.color;
+        let uv = self.uv - rhs.uv;
+        Self {
+            position,
+            color,
+            uv,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Triangle {
     v0: Vertex,
@@ -49,7 +79,19 @@ pub struct Triangle {
     v2: Vertex,
 }
 
+pub enum VerticesOrder {
+    ABC,
+    ACB,
+    BAC,
+    BCA,
+    CAB,
+    CBA,
+}
+
 impl Triangle {
+    fn new(v0: Vertex, v2: Vertex, v1: Vertex) -> Self {
+        Self { v0, v1, v2 }
+    }
     pub fn from_vertices(vertices: [&Vertex; 3]) -> Self {
         Triangle {
             v0: *vertices[0],
@@ -62,12 +104,22 @@ impl Triangle {
         self.v1.position = *matrix * self.v1.position;
         self.v2.position = *matrix * self.v2.position;
     }
+    pub fn reorder(&self, order: VerticesOrder) -> Self {
+        match order {
+            VerticesOrder::ABC => *self,
+            VerticesOrder::ACB => Self::new(self.v0, self.v2, self.v1),
+            VerticesOrder::BAC => Self::new(self.v1, self.v0, self.v2),
+            VerticesOrder::BCA => Self::new(self.v1, self.v2, self.v0),
+            VerticesOrder::CAB => Self::new(self.v2, self.v0, self.v1),
+            VerticesOrder::CBA => Self::new(self.v2, self.v1, self.v0),
+        }
+    }
 }
 
 pub enum ClipResult {
     None,
     One(Triangle),
-    Two(Triangle, Triangle),
+    Two((Triangle, Triangle)),
 }
 
 pub fn cull_triangle_view_frustum(triangle: &Triangle) -> bool {
@@ -126,6 +178,91 @@ pub fn cull_triangle_backface(triangle: &Triangle) -> bool {
     normal.dot(-Vec3::Z) >= 0.0
 }
 
+enum ClipEvaluation {
+    AllPositive,
+    OneNegative(u32),
+    TwoNegative(u32, u32),
+    AllNegative,
+}
+
+fn evaluate_clip_vertices(triangle: &Triangle) -> ClipEvaluation {
+    let mut negative_count: u32 = 3;
+    let mut negative_indices = [true; 3];
+
+    if triangle.v0.position.z > 0.0 {
+        negative_indices[0] = false;
+        negative_count -= 1;
+    }
+    if triangle.v1.position.z > 0.0 {
+        negative_indices[1] = false;
+        negative_count -= 1;
+    }
+    if triangle.v2.position.z > 0.0 {
+        negative_indices[2] = false;
+        negative_count -= 1;
+    }
+
+    if negative_count == 3 {
+        return ClipEvaluation::AllNegative;
+    }
+    if negative_count == 0 {
+        return ClipEvaluation::AllPositive;
+    }
+
+    if negative_count == 1 {
+        for i in 0..negative_indices.len() {
+            if negative_indices[i] == true {
+                return ClipEvaluation::OneNegative(i as u32);
+            }
+        }
+    }
+
+    if negative_count == 2 {
+        if negative_indices[0] == false {
+            return ClipEvaluation::TwoNegative(1, 2);
+        }
+        if negative_indices[1] == false {
+            return ClipEvaluation::TwoNegative(0, 2);
+        }
+        if negative_indices[2] == false {
+            return ClipEvaluation::TwoNegative(0, 1);
+        }
+    }
+    return ClipEvaluation::AllNegative;
+}
+
+pub fn clip_triangle_one_negative(triangle: &Triangle) -> (Triangle, Triangle) {
+    let alpha_a = (-triangle.v0.position.z) / (triangle.v1.position.z - triangle.v0.position.z);
+    let alpha_b = (-triangle.v0.position.z) / (triangle.v2.position.z - triangle.v0.position.z);
+
+    let v0_a = lerp(triangle.v0, triangle.v1, alpha_a);
+    let v0_b = lerp(triangle.v0, triangle.v2, alpha_b);
+
+    let mut result_a = *triangle;
+    let mut result_b = *triangle;
+
+    result_a.v0 = v0_a;
+
+    result_b.v0 = v0_a;
+    result_b.v1 = v0_b;
+
+    return (result_a, result_b);
+}
+
+pub fn clip_triangle_two_negatives(triangle: &Triangle) -> Triangle {
+    let alpha_a = (-triangle.v0.position.z) / (triangle.v2.position.z - triangle.v0.position.z);
+    let alpha_b = (-triangle.v1.position.z) / (triangle.v2.position.z - triangle.v1.position.z);
+
+    let v0 = lerp(triangle.v0, triangle.v2, alpha_a);
+    let v1 = lerp(triangle.v1, triangle.v2, alpha_b);
+
+    Triangle {
+        v0,
+        v1,
+        v2: triangle.v2,
+    }
+}
+
 pub fn clip_cull_triangle(triangle: &Triangle) -> ClipResult {
     // Backface culling
     if cull_triangle_backface(&triangle) {
@@ -135,7 +272,40 @@ pub fn clip_cull_triangle(triangle: &Triangle) -> ClipResult {
     if cull_triangle_view_frustum(triangle) {
         return ClipResult::None;
     } else {
+        let evaluated = evaluate_clip_vertices(triangle);
         // TODO: Clip Triangle
+        match evaluated {
+            ClipEvaluation::OneNegative(first) => {
+                if first == 0
+                {
+                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::ACB)));
+                }
+                else if first == 1
+                {
+                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::BAC)));
+                }
+                else if first == 2
+                {
+                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::CBA)));
+                }
+            }
+            ClipEvaluation::TwoNegative(first, second) => {
+                if first == 0 && second == 1
+                {
+                    return ClipResult::One(clip_triangle_two_negatives(&triangle));
+                }
+                if first == 0 && second == 2
+                {
+                    return ClipResult::One(clip_triangle_two_negatives(&triangle.reorder(VerticesOrder::ACB)));
+                }
+                if first == 1 && second == 2
+                {
+                    return ClipResult::One(clip_triangle_two_negatives(&triangle.reorder(VerticesOrder::BCA)));
+                }
+            }
+            ClipEvaluation::AllPositive => {}
+            ClipEvaluation::AllNegative => {}
+        }
     }
 
     // Return original triangle
@@ -160,12 +330,12 @@ pub fn draw_triangle(
 
     match result {
         ClipResult::None => {}
-        ClipResult::One(tri1) => {
-            draw_triangle_clipped(&tri1, render_state, viewport, state, zbuff);
+        ClipResult::One(tri) => {
+            draw_triangle_clipped(&tri, render_state, viewport, state, zbuff);
         }
-        ClipResult::Two(tri1, tri2) => {
-            draw_triangle_clipped(&tri1, render_state, viewport, state, zbuff);
-            draw_triangle_clipped(&tri2, render_state, viewport, state, zbuff);
+        ClipResult::Two(tri) => {
+            draw_triangle_clipped(&tri.0, render_state, viewport, state, zbuff);
+            draw_triangle_clipped(&tri.1, render_state, viewport, state, zbuff);
         }
     }
 }
@@ -177,8 +347,7 @@ pub struct RenderState<'a> {
 }
 
 impl RenderState<'_> {
-    pub fn from_shade_fn(shade_fn: ShadeFn, texture: Option<&'_ Texture>) -> RenderState
-    {
+    pub fn from_shade_fn(shade_fn: ShadeFn, texture: Option<&'_ Texture>) -> RenderState {
         RenderState { texture, shade_fn }
     }
     pub fn draw_texture(texture: Option<&'_ Texture>) -> RenderState {

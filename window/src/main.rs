@@ -49,8 +49,8 @@ fn main() {
     });
 
     // Limit to max ~120 fps update rate
-    //window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
-    window.limit_update_rate(None);
+    window.limit_update_rate(Some(std::time::Duration::from_micros(8300)));
+    //window.limit_update_rate(None);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let start_time = Instant::now();

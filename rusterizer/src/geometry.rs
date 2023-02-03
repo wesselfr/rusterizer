@@ -113,9 +113,11 @@ pub fn cull_triangle_view_frustum(triangle: &Triangle) -> bool {
     false
 }
 
-pub fn cull_triangle_backface(triangle: &Triangle) -> bool {
-    let normal = (triangle.v1.position.xyz() - triangle.v0.position.xyz())
+pub fn cull_triangle_backface(triangle: &Triangle, view_dir: Vec3) -> bool {
+    let mut normal = (triangle.v1.position.xyz() - triangle.v0.position.xyz())
         .cross(triangle.v2.position.xyz() - triangle.v0.position.xyz());
+
+    normal = normal.normalize();
 
     normal.dot(-Vec3::Z) >= 0.0
 }
@@ -205,9 +207,9 @@ pub fn clip_triangle_two_negatives(triangle: &Triangle) -> Triangle {
     }
 }
 
-pub fn clip_cull_triangle(triangle: &Triangle) -> ClipResult {
+pub fn clip_cull_triangle(triangle: &Triangle, view_dir: Vec3) -> ClipResult {
     // Backface culling
-    if cull_triangle_backface(&triangle) {
+    if cull_triangle_backface(&triangle, view_dir) {
         return ClipResult::None;
     }
     // Frustum culling
@@ -269,7 +271,7 @@ pub fn draw_triangle(
     let mut triangle = Triangle::from_vertices(vertices);
     triangle.transform(&mvp);
 
-    let result = clip_cull_triangle(&triangle);
+    let result = clip_cull_triangle(&triangle, -cam.transform.forward());
 
     match result {
         ClipResult::None => {}
@@ -416,10 +418,10 @@ pub fn draw_triangle_clipped(
             let bary = barycentric_coordinates(coords, sc0, sc1, sc2, area);
             if let Some(b) = bary {
                 let correction = b.x * rec0 + b.y * rec1 + b.z * rec2;
-                let depth = correction;
                 let correction = 1.0 / correction;
+                let depth = correction;
 
-                if depth <= zbuff[pixel_id] {
+                if depth < zbuff[pixel_id] {
                     zbuff[pixel_id] = depth;
                     let color =
                         (render_state.shade_fn)(render_state, [&v0, &v1, &v2], b, correction);
@@ -432,7 +434,7 @@ pub fn draw_triangle_clipped(
 
 pub struct RenderMesh<'a> {
     mesh: &'a Mesh,
-    transform: Transform,
+    pub transform: Transform,
 }
 
 impl RenderMesh<'_> {

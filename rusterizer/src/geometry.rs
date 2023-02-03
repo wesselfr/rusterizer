@@ -2,75 +2,17 @@ use std::ops::{Add, Mul, MulAssign, Sub};
 
 use crate::{
     camera::Camera,
-    color,
     transform::Transform,
-    utils::{lerp, map_to_range, plotline, to_argb8},
+    utils::{lerp, map_to_range, to_argb8},
     Texture,
 };
-use glam::{Mat4, UVec3, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
-use shared::{coords_to_index, State, HEIGHT};
+use glam::{Mat4, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles};
+use shared::{
+    mesh::{Mesh, Vertex},
+    *,
+};
 
-use crate::{barycentric_coordinates, edge_function_cw, index_to_coords, WIDTH};
-
-#[derive(Debug, Clone, Copy)]
-pub struct Vertex {
-    pub position: Vec4,
-    pub color: Vec3,
-    pub uv: Vec2,
-}
-
-impl Mul<f32> for Vertex {
-    type Output = Self;
-
-    fn mul(self, rhs: f32) -> Self {
-        let position = self.position * rhs;
-        let color = self.color * rhs;
-        let uv = self.uv * rhs;
-        Self {
-            position,
-            color,
-            uv,
-        }
-    }
-}
-
-impl MulAssign<f32> for Vertex {
-    fn mul_assign(&mut self, rhs: f32) {
-        self.position *= rhs;
-        self.color *= rhs;
-        self.uv *= rhs;
-    }
-}
-
-impl Add for Vertex {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self {
-        let position = self.position + rhs.position;
-        let color = self.color + rhs.color;
-        let uv = self.uv + rhs.uv;
-        Self {
-            position,
-            color,
-            uv,
-        }
-    }
-}
-
-impl Sub for Vertex {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self {
-        let position = self.position - rhs.position;
-        let color = self.color - rhs.color;
-        let uv = self.uv - rhs.uv;
-        Self {
-            position,
-            color,
-            uv,
-        }
-    }
-}
+use crate::{barycentric_coordinates, edge_function_cw, WIDTH};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Triangle {
@@ -211,20 +153,20 @@ fn evaluate_clip_vertices(triangle: &Triangle) -> ClipEvaluation {
 
     if negative_count == 1 {
         for i in 0..negative_indices.len() {
-            if negative_indices[i] == true {
+            if negative_indices[i] {
                 return ClipEvaluation::OneNegative(i as u32);
             }
         }
     }
 
     if negative_count == 2 {
-        if negative_indices[0] == false {
+        if !negative_indices[0] {
             return ClipEvaluation::TwoNegative(1, 2);
         }
-        if negative_indices[1] == false {
+        if !negative_indices[1] {
             return ClipEvaluation::TwoNegative(0, 2);
         }
-        if negative_indices[2] == false {
+        if !negative_indices[2] {
             return ClipEvaluation::TwoNegative(0, 1);
         }
     }
@@ -246,7 +188,7 @@ pub fn clip_triangle_one_negative(triangle: &Triangle) -> (Triangle, Triangle) {
     result_b.v0 = v0_a;
     result_b.v1 = v0_b;
 
-    return (result_a, result_b);
+    (result_a, result_b)
 }
 
 pub fn clip_triangle_two_negatives(triangle: &Triangle) -> Triangle {
@@ -276,31 +218,33 @@ pub fn clip_cull_triangle(triangle: &Triangle) -> ClipResult {
         // TODO: Clip Triangle
         match evaluated {
             ClipEvaluation::OneNegative(first) => {
-                if first == 0
-                {
-                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::ACB)));
-                }
-                else if first == 1
-                {
-                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::BAC)));
-                }
-                else if first == 2
-                {
-                    return ClipResult::Two(clip_triangle_one_negative(&triangle.reorder(VerticesOrder::CBA)));
+                if first == 0 {
+                    return ClipResult::Two(clip_triangle_one_negative(
+                        &triangle.reorder(VerticesOrder::ACB),
+                    ));
+                } else if first == 1 {
+                    return ClipResult::Two(clip_triangle_one_negative(
+                        &triangle.reorder(VerticesOrder::BAC),
+                    ));
+                } else if first == 2 {
+                    return ClipResult::Two(clip_triangle_one_negative(
+                        &triangle.reorder(VerticesOrder::CBA),
+                    ));
                 }
             }
             ClipEvaluation::TwoNegative(first, second) => {
-                if first == 0 && second == 1
-                {
+                if first == 0 && second == 1 {
                     return ClipResult::One(clip_triangle_two_negatives(&triangle));
                 }
-                if first == 0 && second == 2
-                {
-                    return ClipResult::One(clip_triangle_two_negatives(&triangle.reorder(VerticesOrder::ACB)));
+                if first == 0 && second == 2 {
+                    return ClipResult::One(clip_triangle_two_negatives(
+                        &triangle.reorder(VerticesOrder::ACB),
+                    ));
                 }
-                if first == 1 && second == 2
-                {
-                    return ClipResult::One(clip_triangle_two_negatives(&triangle.reorder(VerticesOrder::BCA)));
+                if first == 1 && second == 2 {
+                    return ClipResult::One(clip_triangle_two_negatives(
+                        &triangle.reorder(VerticesOrder::BCA),
+                    ));
                 }
             }
             ClipEvaluation::AllPositive => {}
@@ -318,7 +262,6 @@ pub fn draw_triangle(
     transform: &Transform,
     cam: &Camera,
     viewport: Vec2,
-    state: &State,
     zbuff: &mut Vec<f32>,
 ) {
     let mvp = cam.projection() * cam.view() * transform.local();
@@ -331,11 +274,11 @@ pub fn draw_triangle(
     match result {
         ClipResult::None => {}
         ClipResult::One(tri) => {
-            draw_triangle_clipped(&tri, render_state, viewport, state, zbuff);
+            draw_triangle_clipped(&tri, render_state, viewport, zbuff);
         }
         ClipResult::Two(tri) => {
-            draw_triangle_clipped(&tri.0, render_state, viewport, state, zbuff);
-            draw_triangle_clipped(&tri.1, render_state, viewport, state, zbuff);
+            draw_triangle_clipped(&tri.0, render_state, viewport, zbuff);
+            draw_triangle_clipped(&tri.1, render_state, viewport, zbuff);
         }
     }
 }
@@ -344,16 +287,26 @@ type ShadeFn = fn(&RenderState, [&Vertex; 3], Vec3, f32) -> u32;
 pub struct RenderState<'a> {
     texture: Option<&'a Texture>,
     shade_fn: ShadeFn,
+    draw_fn: FnPtrDraw,
 }
 
 impl RenderState<'_> {
-    pub fn from_shade_fn(shade_fn: ShadeFn, texture: Option<&'_ Texture>) -> RenderState {
-        RenderState { texture, shade_fn }
-    }
-    pub fn draw_texture(texture: Option<&'_ Texture>) -> RenderState {
+    pub fn from_shade_fn<'a>(
+        shared: &'a State,
+        shade_fn: ShadeFn,
+        texture: Option<&'a Texture>,
+    ) -> RenderState<'a> {
         RenderState {
-            texture: texture,
+            texture,
+            shade_fn,
+            draw_fn: shared.draw_fn,
+        }
+    }
+    pub fn draw_texture<'a>(shared: &'a State, texture: Option<&'a Texture>) -> RenderState<'a> {
+        RenderState {
+            texture,
             shade_fn: draw_texture,
+            draw_fn: shared.draw_fn,
         }
     }
 }
@@ -364,7 +317,6 @@ pub fn draw_texture(
     bary_centric: Vec3,
     correction: f32,
 ) -> u32 {
-    let color: u32;
     let v0 = vertices[0];
     let v1 = vertices[1];
     let v2 = vertices[2];
@@ -374,22 +326,20 @@ pub fn draw_texture(
             let tex_coords =
                 bary_centric.x * v0.uv + bary_centric.y * v1.uv + bary_centric.z * v2.uv;
             let tex_coords = tex_coords * correction;
-            color = texture.argb_at_uv(tex_coords.x, tex_coords.y);
+            texture.argb_at_uv(tex_coords.x, tex_coords.y)
         }
         None => {
             let vertex_color =
                 bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
             let vertex_color = vertex_color * correction;
-            color = to_argb8(
+            to_argb8(
                 255,
                 (vertex_color.x * 255.0) as u8,
                 (vertex_color.y * 255.0) as u8,
                 (vertex_color.z * 255.0) as u8,
-            );
+            )
         }
     }
-
-    color
 }
 
 pub fn draw_vertex_color(
@@ -398,7 +348,6 @@ pub fn draw_vertex_color(
     bary_centric: Vec3,
     correction: f32,
 ) -> u32 {
-    let color: u32;
     let v0 = vertices[0];
     let v1 = vertices[1];
     let v2 = vertices[2];
@@ -406,22 +355,19 @@ pub fn draw_vertex_color(
     let vertex_color =
         bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
     let vertex_color = vertex_color * correction;
-    color = to_argb8(
+    to_argb8(
         255,
         (vertex_color.x * 255.0) as u8,
         (vertex_color.y * 255.0) as u8,
         (vertex_color.z * 255.0) as u8,
-    );
-
-    color
+    )
 }
 
 pub fn draw_triangle_clipped(
     triangle: &Triangle,
     render_state: &RenderState,
     viewport: Vec2,
-    state: &State,
-    zbuff: &mut Vec<f32>,
+    zbuff: &mut [f32],
 ) {
     let rec0 = 1.0 / triangle.v0.position.w;
     let rec1 = 1.0 / triangle.v1.position.w;
@@ -477,74 +423,44 @@ pub fn draw_triangle_clipped(
                     zbuff[pixel_id] = depth;
                     let color =
                         (render_state.shade_fn)(render_state, [&v0, &v1, &v2], b, correction);
-                    state.draw(x as u16, y as u16, color);
+                    (render_state.draw_fn)(x as u16, y as u16, color);
                 }
             }
         }
     }
 }
 
-pub struct Mesh {
-    triangles: Vec<UVec3>,
-    vertices: Vec<Vertex>,
+pub struct RenderMesh<'a> {
+    mesh: &'a Mesh,
+    transform: Transform,
 }
 
-impl Mesh {
-    pub fn new() -> Self {
-        Self {
-            triangles: Vec::new(),
-            vertices: Vec::new(),
+impl RenderMesh<'_> {
+    pub fn from_mesh(mesh: &Mesh) -> RenderMesh {
+        RenderMesh {
+            mesh,
+            transform: Transform::IDENTITY,
         }
-    }
-
-    pub fn triangles(&self) -> &Vec<UVec3> {
-        &self.triangles
-    }
-
-    pub fn vertices(&self) -> &Vec<Vertex> {
-        &self.vertices
-    }
-
-    pub fn get_triangle_vertices(&self, triangle: UVec3) -> [&Vertex; 3] {
-        [
-            &self.vertices[triangle.x as usize],
-            &self.vertices[triangle.y as usize],
-            &self.vertices[triangle.z as usize],
-        ]
-    }
-
-    pub fn add_vertices(&mut self, triangles: &mut Vec<UVec3>, vertices: &mut Vec<Vertex>) {
-        self.triangles.append(triangles);
-        self.vertices.append(vertices);
     }
 
     pub fn draw_mesh(
         &self,
         render_state: &RenderState,
-        transform: &Transform,
         cam: &Camera,
         viewport: Vec2,
-        state: &State,
         zbuff: &mut Vec<f32>,
     ) {
-        for triangle in &self.triangles {
-            let vertices = self.get_triangle_vertices(*triangle);
+        for triangle in &self.mesh.triangles {
+            let vertices = self.mesh.get_triangle_vertices(*triangle);
             draw_triangle(
                 vertices,
                 render_state,
-                transform,
+                &self.transform,
                 cam,
                 viewport,
-                state,
                 zbuff,
             );
         }
-    }
-}
-
-impl Default for Mesh {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

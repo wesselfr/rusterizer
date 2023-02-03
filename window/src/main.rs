@@ -26,6 +26,7 @@ fn main() {
         version: 1,
         time_passed: 0.0,
         draw_fn: test_draw,
+        meshes: Vec::new(),
         textures: Vec::new(),
         should_clear: true,
         clear_color: 0x00,

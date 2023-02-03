@@ -1,17 +1,20 @@
+pub mod mesh;
 pub mod texture;
 use glam::Vec2;
 
+use crate::mesh::*;
 use crate::texture::*;
 
 pub const WIDTH: usize = 600;
 pub const HEIGHT: usize = 600;
 
-type FnPtrDraw = fn(u16, u16, u32);
+pub type FnPtrDraw = fn(u16, u16, u32);
 
 pub struct State {
     pub version: u32,
     pub time_passed: f32,
     pub draw_fn: FnPtrDraw,
+    pub meshes: Vec<Mesh>,
     pub textures: Vec<Texture>,
     pub should_clear: bool,
     pub clear_color: u32,

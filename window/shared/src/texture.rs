@@ -1,7 +1,8 @@
-use crate::to_argb8;
 use glam::Vec2;
 use stb_image;
 use std::path::Path;
+
+use crate::to_argb8;
 
 pub struct Texture {
     pub width: usize,

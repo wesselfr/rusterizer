@@ -15,17 +15,32 @@ impl Texture {
     pub fn load(path: &Path) -> Result<Self, &'static str> {
         let decoded_image = stb_image::image::load(path);
         if let stb_image::image::LoadResult::ImageU8(image) = decoded_image {
-            // we are not taking into accoung pngs yet :)
-            let data = (0..image.data.len() / 3)
-                .map(|id| {
-                    to_argb8(
-                        255,
-                        image.data[id * 3],
-                        image.data[id * 3 + 1],
-                        image.data[id * 3 + 2],
-                    )
-                })
-                .collect();
+            let data;
+            if image.depth == 3 {
+                data = (0..image.data.len() / 3)
+                    .map(|id| {
+                        to_argb8(
+                            255,
+                            image.data[id * 3],
+                            image.data[id * 3 + 1],
+                            image.data[id * 3 + 2],
+                        )
+                    })
+                    .collect();
+            } else if image.depth == 4 {
+                data = (0..image.data.len() / 4)
+                    .map(|id| {
+                        to_argb8(
+                            image.data[id * 4 + 3],
+                            image.data[id * 4],
+                            image.data[id * 4 + 1],
+                            image.data[id * 4 + 2],
+                        )
+                    })
+                    .collect();
+            } else {
+                return Err("Unsupported texture type");
+            }
             Ok(Self {
                 width: image.width,
                 height: image.height,

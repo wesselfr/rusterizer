@@ -52,7 +52,7 @@ impl Transform {
     }
 
     pub fn translate(&mut self, translation: Vec3) {
-        self.translation = translation;
+        self.translation += translation;
     }
 
     pub fn right(&self) -> Vec3 {

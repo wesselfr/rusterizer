@@ -1,9 +1,13 @@
+pub mod camera;
 pub mod mesh;
 pub mod texture;
+pub mod transform;
 use glam::Vec2;
 
+use crate::camera::*;
 use crate::mesh::*;
 use crate::texture::*;
+use crate::transform::*;
 
 pub const WIDTH: usize = 600;
 pub const HEIGHT: usize = 600;
@@ -16,6 +20,7 @@ pub struct State {
     pub draw_fn: FnPtrDraw,
     pub meshes: Vec<Mesh>,
     pub textures: Vec<Texture>,
+    pub camera: Camera,
     pub should_clear: bool,
     pub clear_color: u32,
 }

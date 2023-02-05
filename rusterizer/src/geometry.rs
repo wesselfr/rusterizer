@@ -1,14 +1,14 @@
 use std::ops::{Add, Mul, MulAssign, Sub};
 
 use crate::{
-    camera::Camera,
-    transform::Transform,
     utils::{lerp, map_to_range, to_argb8},
-    Texture,
+    Texture, color::{Color, self},
 };
 use glam::{Mat4, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles};
 use shared::{
+    camera::Camera,
     mesh::{Mesh, Vertex},
+    transform::Transform,
     *,
 };
 
@@ -290,6 +290,7 @@ pub struct RenderState<'a> {
     texture: Option<&'a Texture>,
     shade_fn: ShadeFn,
     draw_fn: FnPtrDraw,
+    clear_color: Color,
 }
 
 impl RenderState<'_> {
@@ -302,6 +303,7 @@ impl RenderState<'_> {
             texture,
             shade_fn,
             draw_fn: shared.draw_fn,
+            clear_color: Color::from_argb8(shared.clear_color),
         }
     }
     pub fn draw_texture<'a>(shared: &'a State, texture: Option<&'a Texture>) -> RenderState<'a> {
@@ -309,6 +311,7 @@ impl RenderState<'_> {
             texture,
             shade_fn: draw_texture,
             draw_fn: shared.draw_fn,
+            clear_color: Color::from_argb8(shared.clear_color),
         }
     }
 }
@@ -328,7 +331,14 @@ pub fn draw_texture(
             let tex_coords =
                 bary_centric.x * v0.uv + bary_centric.y * v1.uv + bary_centric.z * v2.uv;
             let tex_coords = tex_coords * correction;
-            texture.argb_at_uv(tex_coords.x, tex_coords.y)
+            let col = texture.argb_at_uv(tex_coords.x, tex_coords.y);
+            let mut col = Color::from_argb8(col);
+            let alpha = col.a as f32 / 255.0;
+            col.r = lerp(state.clear_color.r as f32,col.r as f32, alpha) as u8;
+            col.g = lerp(state.clear_color.g as f32,col.g as f32, alpha) as u8;
+            col.b = lerp(state.clear_color.b as f32,col.b as f32, alpha) as u8;
+
+            col.to_argb8()
         }
         None => {
             let vertex_color =

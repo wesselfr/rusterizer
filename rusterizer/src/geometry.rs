@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, MulAssign, Sub};
+use std::{ops::{Add, Mul, MulAssign, Sub}, collections::HashMap};
 
 use crate::{
     color::{self, Color},
@@ -292,6 +292,7 @@ pub struct RenderState<'a> {
     shade_fn: ShadeFn,
     draw_fn: FnPtrDraw,
     clear_color: Color,
+    pub variables: HashMap<&'static str, f32>
 }
 
 impl RenderState<'_> {
@@ -305,6 +306,7 @@ impl RenderState<'_> {
             shade_fn,
             draw_fn: shared.draw_fn,
             clear_color: Color::from_argb8(shared.clear_color),
+            variables: HashMap::new(),
         }
     }
     pub fn draw_texture<'a>(shared: &'a State, texture: Option<&'a Texture>) -> RenderState<'a> {
@@ -313,6 +315,7 @@ impl RenderState<'_> {
             shade_fn: draw_texture,
             draw_fn: shared.draw_fn,
             clear_color: Color::from_argb8(shared.clear_color),
+            variables: HashMap::new(),
         }
     }
 }
@@ -445,14 +448,12 @@ pub fn draw_triangle_clipped(
 
 pub struct RenderMesh<'a> {
     mesh: &'a Mesh,
-    pub transform: Transform,
 }
 
 impl RenderMesh<'_> {
     pub fn from_mesh(mesh: &Mesh) -> RenderMesh {
         RenderMesh {
             mesh,
-            transform: Transform::IDENTITY,
         }
     }
 
@@ -468,7 +469,7 @@ impl RenderMesh<'_> {
             draw_triangle(
                 vertices,
                 render_state,
-                &self.transform,
+                &self.mesh.transform,
                 cam,
                 viewport,
                 zbuff,

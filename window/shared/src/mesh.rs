@@ -2,6 +2,8 @@ use std::ops::{Add, Mul, MulAssign, Sub};
 
 use glam::{UVec3, Vec2, Vec3, Vec4};
 
+use crate::transform::Transform;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Vertex {
     pub position: Vec4,
@@ -65,6 +67,7 @@ impl Sub for Vertex {
 pub struct Mesh {
     pub triangles: Vec<UVec3>,
     pub vertices: Vec<Vertex>,
+    pub transform: Transform,
 }
 
 impl Mesh {
@@ -72,6 +75,7 @@ impl Mesh {
         Self {
             triangles: Vec::new(),
             vertices: Vec::new(),
+            transform: Transform::IDENTITY,
         }
     }
 

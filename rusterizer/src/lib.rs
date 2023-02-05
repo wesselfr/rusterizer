@@ -139,29 +139,17 @@ pub fn setup(shared_state: &mut State) {
 pub fn update(shared_state: &mut State) {
     let mut z_buffer = vec![INFINITY; WIDTH * HEIGHT];
 
-    // shared_state.camera.transform = Transform::from_translation(glam::vec3(
-    //     0.0 + shared_state.time_passed.sin() * 1.8,
-    //     1.5,
-    //     6.0 + shared_state.time_passed.cos() * 0.8,
-    // ));
-
-    //shared_state.camera.transform.rotation = Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
-    //    + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
+    shared_state.camera.transform = Transform::from_translation(Vec3::new(
+        shared_state.time_passed.sin() * 0.05 * 0.5,
+        0.0,
+        6.0,
+    ));
 
     let render_state =
         RenderState::from_shade_fn(shared_state, draw_texture, Some(&shared_state.textures[0]));
 
     for mesh in &shared_state.meshes {
         let mut render_mesh = RenderMesh::from_mesh(mesh);
-
-        render_mesh.transform.rotation =
-            Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
-                + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
-
-        render_mesh.transform.rotation =
-            Quat::from_rotation_y(shared_state.time_passed.sin() * 0.5)
-                + Quat::from_rotation_x(shared_state.time_passed.cos() * 0.5);
-
         render_mesh.draw_mesh(
             &render_state,
             &shared_state.camera,
@@ -170,5 +158,5 @@ pub fn update(shared_state: &mut State) {
         );
     }
 
-    shared_state.set_clear_color(0xff103030);
+    shared_state.set_clear_color(0xff110012);
 }

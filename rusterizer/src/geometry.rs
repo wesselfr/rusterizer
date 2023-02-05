@@ -1,8 +1,9 @@
 use std::ops::{Add, Mul, MulAssign, Sub};
 
 use crate::{
+    color::{self, Color},
     utils::{lerp, map_to_range, to_argb8},
-    Texture, color::{Color, self},
+    Texture,
 };
 use glam::{Mat4, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles};
 use shared::{
@@ -334,9 +335,9 @@ pub fn draw_texture(
             let col = texture.argb_at_uv(tex_coords.x, tex_coords.y);
             let mut col = Color::from_argb8(col);
             let alpha = col.a as f32 / 255.0;
-            col.r = lerp(state.clear_color.r as f32,col.r as f32, alpha) as u8;
-            col.g = lerp(state.clear_color.g as f32,col.g as f32, alpha) as u8;
-            col.b = lerp(state.clear_color.b as f32,col.b as f32, alpha) as u8;
+            col.r = lerp(state.clear_color.r as f32, col.r as f32, alpha) as u8;
+            col.g = lerp(state.clear_color.g as f32, col.g as f32, alpha) as u8;
+            col.b = lerp(state.clear_color.b as f32, col.b as f32, alpha) as u8;
 
             col.to_argb8()
         }

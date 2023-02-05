@@ -16,9 +16,13 @@ impl Color {
         argb = (argb << 8) + self.b as u32;
         argb
     }
-    pub fn from_argb8(color: u32) -> Color
-    {
-        Color { a: (color >> 24) as u8, r: (color >> 16) as u8, g: (color >> 8) as u8, b: color as u8}
+    pub fn from_argb8(color: u32) -> Color {
+        Color {
+            a: (color >> 24) as u8,
+            r: (color >> 16) as u8,
+            g: (color >> 8) as u8,
+            b: color as u8,
+        }
     }
 }
 

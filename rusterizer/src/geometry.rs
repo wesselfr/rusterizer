@@ -1,4 +1,7 @@
-use std::{ops::{Add, Mul, MulAssign, Sub}, collections::HashMap};
+use std::{
+    collections::HashMap,
+    ops::{Add, Mul, MulAssign, Sub},
+};
 
 use crate::{
     color::{self, Color},
@@ -288,11 +291,11 @@ pub fn draw_triangle(
 
 type ShadeFn = fn(&RenderState, [&Vertex; 3], Vec3, f32) -> u32;
 pub struct RenderState<'a> {
-    texture: Option<&'a Texture>,
+    pub texture: Option<&'a Texture>,
     shade_fn: ShadeFn,
     draw_fn: FnPtrDraw,
-    clear_color: Color,
-    pub variables: HashMap<&'static str, f32>
+    pub clear_color: Color,
+    pub variables: HashMap<&'static str, f32>,
 }
 
 impl RenderState<'_> {
@@ -452,9 +455,7 @@ pub struct RenderMesh<'a> {
 
 impl RenderMesh<'_> {
     pub fn from_mesh(mesh: &Mesh) -> RenderMesh {
-        RenderMesh {
-            mesh,
-        }
+        RenderMesh { mesh }
     }
 
     pub fn draw_mesh(

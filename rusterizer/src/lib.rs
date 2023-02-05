@@ -1,5 +1,5 @@
-use std::f32::INFINITY;
 use std::f32::consts::PI;
+use std::f32::INFINITY;
 use std::path::Path;
 
 use glam::Quat;
@@ -19,8 +19,8 @@ pub mod color;
 use crate::color::*;
 
 pub mod utils;
-use crate::utils::*;
 use crate::utils::to_argb8;
+use crate::utils::*;
 
 pub mod geometry;
 use crate::geometry::*;
@@ -87,34 +87,55 @@ fn load_gltf_mesh(path: &Path) -> Option<Mesh> {
 pub fn draw_grid(
     state: &RenderState,
     vertices: [&Vertex; 3],
-    mut bary_centric: Vec3,
+    bary_centric: Vec3,
     correction: f32,
 ) -> u32 {
     let v0 = vertices[0];
     let v1 = vertices[1];
     let v2 = vertices[2];
 
-    bary_centric.z += state.variables["time_passed"].sin();
+    match state.texture {
+        Some(texture) => {
+            let tex_coords =
+                bary_centric.x * v0.uv + bary_centric.y * v1.uv + bary_centric.z * v2.uv;
+            let mut tex_coords = tex_coords * correction;
 
-    let vertex_color =
-        bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
-    let vertex_color = vertex_color * correction;
+            tex_coords.x -= state.variables["time_passed"] * 0.3;
 
-    to_argb8(
-        255,
-        (vertex_color.x * 255.0) as u8,
-        (vertex_color.y * 255.0) as u8,
-        (vertex_color.z * 255.0) as u8,
-    )
+            let col = texture.argb_at_uv(tex_coords.x, tex_coords.y);
+            let mut col = Color::from_argb8(col);
+            let alpha = col.a as f32 / 255.0;
+            col.r = lerp(state.clear_color.r as f32, col.r as f32, alpha) as u8;
+            col.g = lerp(state.clear_color.g as f32, col.g as f32, alpha) as u8;
+            col.b = lerp(state.clear_color.b as f32, col.b as f32, alpha) as u8;
+
+            col.to_argb8()
+        }
+        None => {
+            let vertex_color =
+                bary_centric.x * v0.color + bary_centric.y * v1.color + bary_centric.z * v2.color;
+            let vertex_color = vertex_color * correction;
+            to_argb8(
+                255,
+                (vertex_color.x * 255.0) as u8,
+                (vertex_color.y * 255.0) as u8,
+                (vertex_color.z * 255.0) as u8,
+            )
+        }
+    }
 }
-
 #[no_mangle]
 pub fn setup(shared_state: &mut State) {
     println!("Application version: {}", shared_state.version);
 
     shared_state.textures.clear();
-    //let texture = Texture::load(Path::new("assets/test.jpg"));
     let texture = Texture::load(Path::new("assets/synthwave/sun.png"));
+    if let Ok(texture) = texture {
+        shared_state.textures.push(texture);
+    }
+
+    //let texture = Texture::load(Path::new("assets/test.jpg"));
+    let texture = Texture::load(Path::new("assets/synthwave/grid.jpg"));
     if let Ok(texture) = texture {
         shared_state.textures.push(texture);
     }
@@ -122,35 +143,38 @@ pub fn setup(shared_state: &mut State) {
     // Clear previous loaded meshes
     shared_state.meshes.clear();
 
-        // Floor
-        let mut mesh = Mesh::new();
-        let mut vertices = vec![
-            Vertex {
-                position: Vec4::new(-1.0, -1.0, 0.0, 1.0),
-                color: Vec3::new(1.0, 0.0, 0.0),
-                uv: Vec2::new(0.0, 0.0),
-            },
-            Vertex {
-                position: Vec4::new(-1.0, 1.0, 0.0, 1.0),
-                color: Vec3::new(0.0, 1.0, 0.0),
-                uv: Vec2::new(0.0, 1.0),
-            },
-            Vertex {
-                position: Vec4::new(1.0, 1.0, 0.0, 1.0),
-                color: Vec3::new(0.0, 0.0, 1.0),
-                uv: Vec2::new(1.0, 1.0),
-            },
-            Vertex {
-                position: Vec4::new(1.0, -1.0, 0.0, 1.0),
-                color: Vec3::new(1.0, 0.0, 1.0),
-                uv: Vec2::new(1.0, 0.0),
-            },
-        ];
-        let mut indices = vec![UVec3::new(2, 1, 0), UVec3::new(3, 2, 0)];
-        mesh.add_vertices(&mut indices, &mut vertices);
-        mesh.transform = Transform::from_translation_rotation(Vec3::new(2.0, 0.0, -12.5), Quat::from_rotation_y(-89.0 * (PI/180.0)));
-        mesh.transform.scale = Vec3::ONE * 12.0;
-        shared_state.meshes.push(mesh);
+    // Floor
+    let mut mesh = Mesh::new();
+    let mut vertices = vec![
+        Vertex {
+            position: Vec4::new(-1.0, -1.0, 0.0, 1.0),
+            color: Vec3::new(1.0, 0.0, 0.0),
+            uv: Vec2::new(0.0, 0.0),
+        },
+        Vertex {
+            position: Vec4::new(-1.0, 1.0, 0.0, 1.0),
+            color: Vec3::new(0.0, 1.0, 0.0),
+            uv: Vec2::new(0.0, 1.0),
+        },
+        Vertex {
+            position: Vec4::new(1.0, 1.0, 0.0, 1.0),
+            color: Vec3::new(0.0, 0.0, 1.0),
+            uv: Vec2::new(1.0, 1.0),
+        },
+        Vertex {
+            position: Vec4::new(1.0, -1.0, 0.0, 1.0),
+            color: Vec3::new(1.0, 0.0, 1.0),
+            uv: Vec2::new(1.0, 0.0),
+        },
+    ];
+    let mut indices = vec![UVec3::new(2, 1, 0), UVec3::new(3, 2, 0)];
+    mesh.add_vertices(&mut indices, &mut vertices);
+    mesh.transform = Transform::from_translation_rotation(
+        Vec3::new(2.0, 0.0, -12.5),
+        Quat::from_rotation_y(-89.0 * (PI / 180.0)),
+    );
+    mesh.transform.scale = Vec3::ONE * 12.0;
+    shared_state.meshes.push(mesh);
 
     // Sun
     let mut mesh = Mesh::new();
@@ -201,8 +225,10 @@ pub fn update(shared_state: &mut State) {
         RenderState::from_shade_fn(shared_state, draw_texture, Some(&shared_state.textures[0]));
 
     let mut render_state_grid =
-        RenderState::from_shade_fn(shared_state, draw_grid, Some(&shared_state.textures[0]));
-    render_state_grid.variables.insert("time_passed", shared_state.time_passed);
+        RenderState::from_shade_fn(shared_state, draw_grid, Some(&shared_state.textures[1]));
+    render_state_grid
+        .variables
+        .insert("time_passed", shared_state.time_passed);
 
     let grid_mesh = RenderMesh::from_mesh(&shared_state.meshes[0]);
     grid_mesh.draw_mesh(

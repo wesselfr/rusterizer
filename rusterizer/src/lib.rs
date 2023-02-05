@@ -216,12 +216,12 @@ pub fn update(shared_state: &mut State) {
     let mut z_buffer = vec![INFINITY; WIDTH * HEIGHT];
 
     shared_state.camera.transform = Transform::from_translation(Vec3::new(
-        shared_state.time_passed.sin() * 0.05 * 0.5,
+        1.0 + shared_state.time_passed.sin() * 0.5,
         0.0,
         0.0,
     ));
 
-    let render_state_normal =
+    let render_state_sun =
         RenderState::from_shade_fn(shared_state, draw_texture, Some(&shared_state.textures[0]));
 
     let mut render_state_grid =
@@ -238,15 +238,12 @@ pub fn update(shared_state: &mut State) {
         &mut z_buffer,
     );
 
-    for mesh in shared_state.meshes.iter().skip(1) {
-        let render_mesh = RenderMesh::from_mesh(mesh);
-        render_mesh.draw_mesh(
-            &render_state_normal,
-            &shared_state.camera,
-            Vec2::new(WIDTH as f32, HEIGHT as f32),
-            &mut z_buffer,
-        );
-    }
-
+    let sun_mesh = RenderMesh::from_mesh(&shared_state.meshes[1]);
+    sun_mesh.draw_mesh(
+        &render_state_sun,
+        &shared_state.camera,
+        Vec2::new(WIDTH as f32, HEIGHT as f32),
+        &mut z_buffer,
+    );
     shared_state.set_clear_color(0xff110012);
 }

@@ -1,5 +1,6 @@
 use std::ops::*;
 
+#[derive(Copy, Clone)]
 pub struct Color {
     pub a: u8,
     pub r: u8,
@@ -14,6 +15,14 @@ impl Color {
         argb = (argb << 8) + self.g as u32;
         argb = (argb << 8) + self.b as u32;
         argb
+    }
+    pub fn from_argb8(color: u32) -> Color {
+        Color {
+            a: (color >> 24) as u8,
+            r: (color >> 16) as u8,
+            g: (color >> 8) as u8,
+            b: color as u8,
+        }
     }
 }
 
@@ -37,6 +46,19 @@ impl AddAssign for Color {
             g: self.g + other.g,
             b: self.b + other.b,
         };
+    }
+}
+
+impl Sub for Color {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            a: self.a + other.a,
+            r: self.r + other.r,
+            g: self.g + other.g,
+            b: self.b + other.b,
+        }
     }
 }
 
